@@ -1,55 +1,78 @@
-import RPi.GPIO as GPIO
-import time
+import RPi.GPIO as IO
+import time as tm
 
-dac = [26,19, 13, 6, 5, 11, 9, 10]
+def decimal2binary(value):
+    return [int(bit) for bit in bin(value)[2:].zfill(8)]
+comp = 4
+troyka = 17
+dac = [10, 9, 11, 5, 6, 13, 19, 26]
 leds = [21, 20, 16, 12, 7, 8, 25, 24]
 
-maxVoltage = 3.3
-troyka = 17
-comp =  4
+dac.reverse()
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(dac, GPIO.OUT, initial = GPIO.LOW)
-GPIO.setup(leds, GPIO.OUT, initial = GPIO.LOW)
-GPIO.setup(troyka, GPIO.OUT, initial = GPIO.HIGH)
-GPIO.setup(comp, GPIO.IN)
+IO.setmode(IO.BCM)
+IO.setup(troyka, IO.OUT, initial = IO.HIGH)
+IO.setup(dac, IO.OUT)
+IO.setup(leds, IO.OUT)
+IO.setup(comp, IO.IN)
 
-def decimal2binary(i):
-    return [int(elem) for elem in bin(i)[2:].zfill(8)]
+def adc():
+    for i in range(256):
+        IO.output(dac, decimal2binary(i))
+        tm.sleep(0.001)
+        comp_out = IO.input(comp)
+        tm.sleep(0.001)
+        if comp_out == 0:
+            IO.output(dac, 0)
+            tm.sleep(0.01)
+            return i
 
-def bin2dac(i):
-    signal = decimal2binary(i)
-    GPIO.output(dac, signal)    
-    #return signal
+    IO.output(dac, 0)
+    tm.sleep(0.01)
+    return 256
 
-def adc(i, value):
-    if i == -1:
-        return value
-    bin2dac(value + 2**i)
-    time.sleep(0.01)
-    compVAL = GPIO.input(comp)
-    if compVAL == 0:
-        return adc(i - 1, value)
-    else:
-        return adc(i - 1, value + 2**i)
+def adc_new():
+    dac_val = [0] * 8 
+    for i in range(0, 8):
+        dac_val[i] = 1
+        IO.output(dac, dac_val)
+        tm.sleep(0.001)
+        comp_out = IO.input(comp)
+        tm.sleep(0.001)
+        if comp_out == 0:
+            dac_val[i] = 0
+    weight = 1 
+    sum = 0
+    for i in range(8):
+        sum += weight * dac_val[7 - i]
+        weight *= 2
+    IO.output(dac, 0)
+    tm.sleep(0.001)
+    print(dac_val)
+    return sum
+
+
 
 try:
-    while True:
-        const = adc(7, 0)
-        print("цифровое значение =")
-        print(const)
-        print("напряжение")
-        valToPr = const/ 2**8 * 3.3
-        print(valToPr)
-        valToPr = valToPr/3.3 * 8 +0.4
+    while(1):
+        val = adc_new()
+        leds_val = [0] * 8
         for i in range(8):
-            if valToPr >= 1:
-                GPIO.output(leds[7 - i], 1)
-            else:
-                GPIO.output(leds[7 - i], 0)
-            valToPr = valToPr - 1
-
+            if(i * 256 / 8 < val):
+                leds_val[i] =   1
+        IO.output(leds, leds_val)
+        print(str(val) +" " + str(float(val) /256 * 3.3))
+        tm.sleep(0.001)
 finally:
-    GPIO.output(dac, GPIO.LOW)
-    GPIO.cleanup(dac)
-    GPIO.cleanup(leds)
+    IO.output(dac, 0)
+    IO.cleanup()
+
+
+
+
+
+        
+
+
+
+
