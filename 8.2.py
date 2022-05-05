@@ -27,11 +27,10 @@ plt.grid()
 plt.plot(time, data, c='blue', linewidth=1, label = 'V(t)')
 
     
-plt.text(charge + 5, data.max() - 0.5, "charging time: {:.5f} с".format(charge))
-plt.text(charge + 5, data.max() - 0.6, "discharge time:  {:.5f} с".format(finish - charge))
+
 plt.xlabel(r'Время, $c$',    wrap=True)
 plt.ylabel(r'Напряжение, $V$', wrap=True)
-plt.scatter (settings, data, c="red")
+plt.scatter (0.0046, data.max(), c="red")
 
 plt.legend()
 plt.title('Процесс заряда и разряда конденсатора в RC-цепи', wrap=True)
